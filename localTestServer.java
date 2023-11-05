@@ -20,7 +20,7 @@ class Server {
   }
 
   public static void main(String args[]) {
-    Server server = new Server(5000, 0, "127.0.0.1");
+    Server server = new Server(5000, 0, "127.0.0.1"); //change IP on both server + client side to machine's IP when testing to see how it works with public IP's  
   }
 }
 
