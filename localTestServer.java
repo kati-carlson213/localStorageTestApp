@@ -8,7 +8,6 @@ class Server {
   public Server(int port, int backlog, String IP) {
     try {
       server = new ServerSocket(port, backlog, InetAddress.getByName(IP));
-      System.out.println("Server started.");
 
       while (true) {
         Socket socket = server.accept();
