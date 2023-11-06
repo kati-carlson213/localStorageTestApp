@@ -22,7 +22,7 @@ import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String IP = "10.0.2.2"; // Change to your server's IP address
+    private static final String IP = "10.0.2.2"; // Change to server's IP address in actual implementation
     private static final int port = 5000;
     private Socket socket = null;
 
