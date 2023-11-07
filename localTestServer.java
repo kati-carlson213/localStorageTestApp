@@ -5,6 +5,7 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 
 class Server {
@@ -14,6 +15,7 @@ class Server {
   public Server(int port, int backlog, String IP) {
     try {
       server = new ServerSocket(port, backlog, InetAddress.getByName(IP));
+ 
 
       while (true) {
         Socket socket = server.accept();
@@ -31,8 +33,10 @@ class Server {
   class ClientHandler extends Thread {
     private Socket socket;
 
-    String encryptionKey = "put32CharacterEncryptionKeyHere_"; //be sure to edit code to secure key in actual implementation -- this is just a test
-    String initVector = "put16CharaIVhere"; //be sure to randomly generate + secure in actual implementation
+
+    String encryptionKey = "DIIPuSZAyzysvCtBpPTgBLuFKWJFDZR1"; //be sure to edit code to secure key in actual implementation -- this is just a placeholder for testing
+    String initVector = "jSabBhKCIDekmfA1"; //be sure to randomly generate + secure in actual implementation 
+
 
     public ClientHandler(Socket socket) {
       this.socket = socket;
@@ -41,7 +45,9 @@ class Server {
     private void decryptFile(InputStream inputStream, OutputStream outputStream) {
       try {
         IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-        SecretKeySpec key = new SecretKeySpec(encryptionKey.getBytes("UTF-8"), "AES");
+        byte[] keyData = encryptionKey.getBytes(StandardCharsets.UTF_8);
+        SecretKeySpec key = new SecretKeySpec(keyData, "AES");
+        
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.DECRYPT_MODE, key, iv);
 
@@ -77,7 +83,7 @@ class Server {
     @Override
     public void run() {
       try {
-        File receivedFilesDirectory = new File("received_files");
+        File receivedFilesDirectory = new File("encrypted_files");
         File decryptedFilesDirectory = new File(decryptedFilesDirectoryPath); // Use the absolute path
 
         receivedFilesDirectory.mkdir();
@@ -115,6 +121,7 @@ class Server {
           }
 
           byte[] receivedData = dataStream.toByteArray();
+
             String fileName = getFileNameFromHeader(header);
 
             File receivedFile = new File(receivedFilesDirectory, fileName);
