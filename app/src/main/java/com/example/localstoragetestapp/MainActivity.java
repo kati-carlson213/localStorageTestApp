@@ -17,12 +17,13 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String IP = "10.0.2.2"; // Change to server's IP address in actual implementation
+    private static final String IP = "10.0.2.2";
     private static final int port = 5000;
     private Socket socket = null;
 
@@ -31,8 +32,11 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int PICK_FILE_REQUEST = 1;
 
-    String encryptionKey = "put32CharacterEncryptionKeyHere_"; //be sure to edit code to secure key in actual implementation -- this is just a test
-    String initVector = "put16charaIVhere"; //be sure to randomly generate + secure in actual implementation
+    String encryptionKey = "DIIPuSZAyzysvCtBpPTgBLuFKWJFDZR1"; //be sure to edit code to secure key in actual implementation -- this is just a placeholder for testing
+    String initVector = "jSabBhKCIDekmfA1"; //be sure to randomly generate + secure for actual implementation
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,7 +148,11 @@ public class MainActivity extends AppCompatActivity {
     private ByteArrayOutputStream encryptFile(InputStream inputStream) {
         try {
             IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-            SecretKeySpec key = new SecretKeySpec(encryptionKey.getBytes("UTF-8"), "AES");
+
+            byte[] keyData = encryptionKey.getBytes(StandardCharsets.UTF_8);
+            SecretKeySpec key = new SecretKeySpec(keyData, "AES");
+
+
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, key, iv);
 
@@ -181,4 +189,6 @@ public class MainActivity extends AppCompatActivity {
         return fileName;
     }
 }
+
+
 
