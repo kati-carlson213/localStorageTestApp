@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
@@ -32,8 +33,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int PICK_FILE_REQUEST = 1;
 
+
+
     String encryptionKey = "DIIPuSZAyzysvCtBpPTgBLuFKWJFDZR1"; //be sure to edit code to secure key in actual implementation -- this is just a placeholder for testing
-    String initVector = "jSabBhKCIDekmfA1"; //be sure to randomly generate + secure for actual implementation
+    String initVector = "jSabBhKCIDek"; //be sure to randomly generate + secure for actual implementation
 
 
 
@@ -148,13 +151,13 @@ public class MainActivity extends AppCompatActivity {
     private ByteArrayOutputStream encryptFile(InputStream inputStream) {
         try {
             IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
+            byte[] ivBytes = iv.getIV();
 
             byte[] keyData = encryptionKey.getBytes(StandardCharsets.UTF_8);
             SecretKeySpec key = new SecretKeySpec(keyData, "AES");
 
-
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, key, iv);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(128, ivBytes));
 
             ByteArrayOutputStream encryptedOutput = new ByteArrayOutputStream();
             CipherOutputStream cipherOutputStream = new CipherOutputStream(encryptedOutput, cipher);
@@ -175,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private String getFileNameFromUri(Uri fileUri) {
         String fileName = "default_filename";
         Cursor cursor = getContentResolver().query(fileUri, null, null, null, null);
@@ -189,6 +193,5 @@ public class MainActivity extends AppCompatActivity {
         return fileName;
     }
 }
-
 
 
