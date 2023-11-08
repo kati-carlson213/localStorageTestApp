@@ -6,6 +6,8 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import javax.crypto.spec.GCMParameterSpec;
+
 
 
 class Server {
@@ -35,7 +37,7 @@ class Server {
 
 
     String encryptionKey = "DIIPuSZAyzysvCtBpPTgBLuFKWJFDZR1"; //be sure to edit code to secure key in actual implementation -- this is just a placeholder for testing
-    String initVector = "jSabBhKCIDekmfA1"; //be sure to randomly generate + secure in actual implementation 
+    String initVector = "jSabBhKCIDek"; //be sure to randomly generate + secure in actual implementation
 
 
     public ClientHandler(Socket socket) {
@@ -46,10 +48,15 @@ class Server {
       try {
         IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
         byte[] keyData = encryptionKey.getBytes(StandardCharsets.UTF_8);
+
+        byte[] ivBytes = iv.getIV();
+
         SecretKeySpec key = new SecretKeySpec(keyData, "AES");
+
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, ivBytes));
+
         
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, key, iv);
 
         CipherInputStream cipherInputStream = new CipherInputStream(inputStream, cipher);
 
@@ -58,6 +65,7 @@ class Server {
 
         while ((bytesRead = cipherInputStream.read(buffer)) != -1) {
           outputStream.write(buffer, 0, bytesRead);
+
         }
 
         // Close the CipherInputStream
@@ -66,6 +74,7 @@ class Server {
         e.printStackTrace();
       }
     }
+
 
 
     private String getFileNameFromHeader(String header) {
@@ -152,3 +161,4 @@ class Server {
     }
   }
 }
+
