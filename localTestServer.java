@@ -1,15 +1,14 @@
 import java.io.*;
 import java.net.*;
-import java.util.*;
+import java.nio.file.*;
 
 class Server {
   private ServerSocket server = null;
-  private String storagePath = "received_files"; // Directory for storing received files
+  private static final String receivedFilesDirectoryPath = "C:\\Users\\katie\\received_files";
 
   public Server(int port, int backlog, String IP) {
     try {
       server = new ServerSocket(port, backlog, InetAddress.getByName(IP));
-      System.out.println("Server started.");
 
       while (true) {
         Socket socket = server.accept();
@@ -31,54 +30,73 @@ class Server {
       this.socket = socket;
     }
 
+    private String getFileNameFromHeader(String header) {
+      int startIndex = header.indexOf("filename:");
+      if (startIndex != -1) {
+        int endIndex = header.indexOf("\r\n", startIndex);
+        if (endIndex != -1) {
+          return header.substring(startIndex + 9, endIndex);
+        }
+      }
+      return "default_filename"; // Return a default filename if the header is invalid
+    }
+
     @Override
     public void run() {
       try {
-        InputStream inputStream = socket.getInputStream();
+        File receivedFilesDirectory = new File(receivedFilesDirectoryPath);
+        receivedFilesDirectory.mkdirs();
+
         byte[] buffer = new byte[1024];
-        int bytesRead;
 
         while (true) {
-          int headerLength = inputStream.read(buffer, 0, buffer.length);
+          int headerLength = socket.getInputStream().read(buffer, 0, buffer.length);
           if (headerLength <= 0) {
             break; // No more data to read
           }
 
           String header = new String(buffer, 0, headerLength);
 
-          if (header.startsWith("retrieve:")) {
-            // Handle file retrieval request
-            String fileName = header.substring(9, header.length() - 2); // Extract file name
-            receiveFile(fileName, inputStream);
+          ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
+          while (true) {
+            int bytesRead = socket.getInputStream().read(buffer, 0, buffer.length);
+            if (bytesRead <= 0) {
+              break; // No more data to read
+            }
+
+            // Check for "END_OF_FILE" delimiter and skip it
+            String dataChunk = new String(buffer, 0, bytesRead);
+            if (dataChunk.contains("END_OF_FILE")) {
+              bytesRead -= "END_OF_FILE\r\n".getBytes().length; // Subtract delimiter length
+            }
+
+            dataStream.write(buffer, 0, bytesRead);
+
+            // Check again for "END_OF_FILE" delimiter
+            if (dataChunk.contains("END_OF_FILE")) {
+              break; // End of the current file
+            }
+          }
+
+          byte[] receivedData = dataStream.toByteArray();
+
+          String fileName = getFileNameFromHeader(header);
+
+          File receivedFile = new File(receivedFilesDirectory, fileName);
+          try (FileOutputStream fileOutputStream = new FileOutputStream(receivedFile)) {
+            fileOutputStream.write(receivedData, 0, receivedData.length);
+          } catch (Exception e) {
+            System.out.println("Error saving received file: " + e.getMessage());
           }
         }
       } catch (Exception e) {
-        System.out.println("Error: " + e.getMessage());
+        System.out.println("Error receiving file: " + e.getMessage());
       } finally {
         try {
           socket.close();
         } catch (IOException e) {
           e.printStackTrace();
         }
-      }
-    }
-
-    private void receiveFile(String fileName, InputStream inputStream) {
-      try {
-        // Create a FileOutputStream to write the received file
-        File outputFile = new File(storagePath, fileName);
-        FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
-
-        byte[] buffer = new byte[1024];
-        int bytesRead;
-
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-          fileOutputStream.write(buffer, 0, bytesRead);
-        }
-
-        fileOutputStream.close();
-      } catch (IOException e) {
-        e.printStackTrace();
       }
     }
   }
