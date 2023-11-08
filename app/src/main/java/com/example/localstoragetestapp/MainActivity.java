@@ -1,5 +1,6 @@
 package com.example.localstoragetestapp;
 
+import android.content.ClipData;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -10,20 +11,16 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
-
     private static final String IP = "10.0.2.2";
     private static final int port = 5000;
     private Socket socket = null;
-
     private Button selectFileButton;
     private TextView connectionStatus;
-
     private static final int PICK_FILE_REQUEST = 1;
 
     @Override
@@ -85,16 +82,28 @@ public class MainActivity extends AppCompatActivity {
     private void openFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // Allow multiple files selection
         startActivityForResult(intent, PICK_FILE_REQUEST);
     }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PICK_FILE_REQUEST && resultCode == RESULT_OK) {
             List<Uri> selectedFileUris = new ArrayList<>();
-            Uri selectedFileUri = data.getData();
-            selectedFileUris.add(selectedFileUri);
+            ClipData clipData = data.getClipData();
 
+            if (clipData != null) {
+                // If multiple files are selected
+                for (int i = 0; i < clipData.getItemCount(); i++) {
+                    Uri selectedFileUri = clipData.getItemAt(i).getUri();
+                    selectedFileUris.add(selectedFileUri);
+                }
+            } else {
+                // If only one file is selected
+                Uri selectedFileUri = data.getData();
+                selectedFileUris.add(selectedFileUri);
+            }
 
             new Thread(new Runnable() {
                 @Override
@@ -112,33 +121,27 @@ public class MainActivity extends AppCompatActivity {
 
                 for (Uri fileUri : fileUris) {
                     InputStream inputStream = getContentResolver().openInputStream(fileUri);
-
-
                     String fileName = getFileNameFromUri(fileUri);
+
+                    // Send the filename and file data
                     outputStream.write(("filename:" + fileName + "\r\n").getBytes());
 
                     byte[] buffer = new byte[1024];
                     int bytesRead;
-
                     while ((bytesRead = inputStream.read(buffer)) != -1) {
                         outputStream.write(buffer, 0, bytesRead);
                     }
 
-
+                    // Add the "END_OF_FILE" delimiter separately for each file
                     outputStream.write("END_OF_FILE\r\n".getBytes());
-
-                    inputStream.close();
                 }
 
-                // Add a special delimiter to indicate the end of all files
-                outputStream.write("END_OF_ALL_FILES\r\n".getBytes());
                 outputStream.flush();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 
     private String getFileNameFromUri(Uri fileUri) {
         String fileName = "default_filename";
